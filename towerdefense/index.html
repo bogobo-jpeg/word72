@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta name="referrer" content="no-referrer-when-downgrade">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Endless Tower Defense</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Orbitron', sans-serif;
+      background-color: #0a0a1e;
+      color: #e0e0e0;
+      overflow: hidden;
+    }
+
+    #game-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle, #1a1a3e 0%, #0a0a1e 100%);
+    }
+
+    #game-board {
+      width: 600px;
+      height: 400px;
+      background-color: rgba(22, 33, 62, 0.8);
+      position: relative;
+      overflow: hidden;
+      border: 2px solid #0f3460;
+      box-shadow: 0 0 20px #0f3460;
+      border-radius: 10px;
+    }
+
+    .tower {
+      width: 30px;
+      height: 30px;
+      background-color: #e94560;
+      position: absolute;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(233, 69, 96, 0.7);
+      transition: transform 0.3s ease;
+    }
+
+    .tower:hover {
+      transform: scale(1.1);
+    }
+
+    .enemy {
+      width: 20px;
+      height: 20px;
+      background-color: #533483;
+      position: absolute;
+      border-radius: 50%;
+      box-shadow: 0 0 5px rgba(83, 52, 131, 0.7);
+    }
+
+    .enemy.red {
+      width: 30px;
+      height: 30px;
+      background-color: #ff0000;
+      box-shadow: 0 0 8px rgba(255, 0, 0, 0.7);
+    }
+
+    .enemy.spawner {
+      width: 40px;
+      height: 40px;
+      background-color: #800080;
+      box-shadow: 0 0 10px rgba(128, 0, 128, 0.7);
+    }
+
+    .enemy.spawned {
+      width: 15px;
+      height: 15px;
+      background-color: #8a2be2;
+      box-shadow: 0 0 5px rgba(138, 43, 226, 0.7);
+    }
+
+    .bullet {
+      width: 5px;
+      height: 5px;
+      background-color: #ffff00;
+      position: absolute;
+      border-radius: 50%;
+      box-shadow: 0 0 5px rgba(255, 255, 0, 0.7);
+    }
+
+    #controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 20px;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      font-family: 'Orbitron', sans-serif;
+      background-color: #0f3460;
+      color: #e0e0e0;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-radius: 5px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 0 10px rgba(15, 52, 96, 0.7);
+    }
+
+    button:hover {
+      background-color: #e94560;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(233, 69, 96, 0.7);
+    }
+
+    #stats {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 16px;
+      background-color: rgba(15, 52, 96, 0.7);
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(15, 52, 96, 0.7);
+      z-index: 1000;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.05);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .tower,
+    .enemy,
+    .bullet {
+      animation: pulse 2s infinite;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="game-container">
+    <h1 style="color: #e94560; text-shadow: 0 0 10px #e94560; margin-bottom: 20px;">Tower Defense</h1>
+    <div id="game-board"></div>
+    <div id="controls">
+      <button onclick="addRandomTower()">Add Random Tower (Cost: ${GG_ALL_GAME_CONFIG.towerCost})</button>
+      <button onclick="upgradeTower()">Upgrade Tower (Cost: ${GG_ALL_GAME_CONFIG.upgradeCost})</button>
+    </div>
+  </div>
+  <div id="stats">
+    Wave: <span id="wave">1</span> |
+    Score: <span id="score">0</span> |
+    Lives: <span id="lives">10</span>
+  </div>
+  <script>
+    let GG_ALL_GAME_CONFIG = {
+      initialLives: 10, // Starting number of player lives
+      initialWave: 1, // Starting wave number
+      enemySpawnRate: 2000, // Time between enemy spawns in milliseconds
+      enemySpeed: 1, // Base speed of enemies
+      towerCost: 15, // Cost to place a new tower
+      towerCostMultiplier: 2, // Multiplier for the cost of each subsequent tower
+      upgradeCost: 50, // Cost to upgrade a tower
+      towerDamage: 1, // Base damage of towers
+      enemyHealth: 3, // Starting health of enemies
+      enemyReward: 10, // Score gained for defeating an enemy
+      waveDifficultyIncrease: 0.1, // Factor by which difficulty increases each wave
+      initialScore: 15, // Starting score for the player
+      towerTypes: ['🔫', '🏹', '🔥', '❄️', '🗿', '🤖', '😈', '👹', '☄️'], // Array of tower types represented by emojis
+      bulletSpeed: 7, // Speed of bullets fired by towers (increased for better aiming)
+      bulletSize: 5, // Size of bullets in pixels
+      bulletEffects: { // Special effects for each tower type
+        '🔫': {
+          color: '#ffff00',
+          effect: 'normal'
+        },
+        '🏹': {
+          color: '#00ff00',
+          effect: 'fast'
+        },
+        '🔥': {
+          color: '#ff0000',
+          effect: 'burn'
+        },
+        '❄️': {
+          color: '#00ffff',
+          effect: 'freeze'
+        },
+        '🗿': {
+          color: '#808080',
+          effect: 'big'
+        },
+        '🤖': {
+          color: '#c0c0c0',
+          effect: 'auto'
+        },
+        '😈': {
+          color: '#00ff00',
+          effect: 'reverse'
+        },
+        '👹': {
+          color: '#ff0000',
+          effect: 'shotgun'
+        },
+        '☄️': {
+          color: '#ff0000',
+          effect: 'meteor'
+        }
+      },
+      predictionAccuracy: 0.9, // Accuracy of enemy movement prediction (0-1)
+      bigBulletSize: 10, // Size of bigger bullets in pixels
+      autoTowerCooldown: 1000, // Initial cooldown for auto tower in milliseconds
+      autoTowerUpgradeReduction: 100, // Cooldown reduction per upgrade for auto tower in milliseconds
+      blueEnemySpawnDelay: 15000, // Delay before blue enemies start spawning (in milliseconds)
+      blueEnemyHealth: 1.5, // Health of blue enemies (half of regular enemy health)
+      blueEnemySpeed: 2, // Speed of blue enemies (twice as fast as regular enemies)
+      redEnemySpawnDelay: 35000, // Delay before red enemies start spawning (in milliseconds)
+      redEnemyHealth: 15, // Health of red enemies (five times the regular enemy health)
+      redEnemySpeed: 0.5, // Speed of red enemies (half as fast as regular enemies)
+      redEnemySize: 30, // Size of red enemies in pixels
+      fastBulletSpeedMultiplier: 1.5, // Speed multiplier for fast bullets
+      spawnerEnemySpawnDelay: 30000, // Delay before spawner enemies start spawning (in milliseconds)
+      spawnerEnemyHealth: 20, // Health of spawner enemies
+      spawnerEnemySpeed: 0.3, // Speed of spawner enemies
+      spawnerEnemySize: 40, // Size of spawner enemies in pixels
+      spawnerEnemyColor: '#800080', // Color of spawner enemies (purple)
+      spawnedEnemyHealth: 2, // Health of enemies spawned by spawner enemy
+      spawnedEnemySpeed: 1.5, // Speed of enemies spawned by spawner enemy
+      spawnedEnemySize: 15, // Size of enemies spawned by spawner enemy in pixels
+      spawnedEnemyColor: '#8a2be2', // Color of enemies spawned by spawner enemy (purple)
+      spawnerEnemySpawnRate: 1000, // Time between spawns for the spawner enemy (in milliseconds)
+      meteorTowerCooldown: 5000, // Cooldown time for meteor tower in milliseconds
+      meteorTowerDamage: 10 // Damage multiplier for meteor tower
+    };
+    let gameState = {
+      towers: [],
+      enemies: [],
+      bullets: [],
+      score: GG_ALL_GAME_CONFIG.initialScore,
+      wave: GG_ALL_GAME_CONFIG.initialWave,
+      lives: GG_ALL_GAME_CONFIG.initialLives,
+      currentTowerCost: GG_ALL_GAME_CONFIG.towerCost
+    };
+
+    function addRandomTower() {
+      if (gameState.score >= gameState.currentTowerCost) {
+        document.querySelector('button').textContent = `Add Random Tower (Cost: ${gameState.currentTowerCost})`;
+        let newTowerLeft, newTowerTop;
+        let overlap;
+        let attempts = 0;
+        const maxAttempts = 50;
+        do {
+          newTowerLeft = Math.random() * 570;
+          newTowerTop = Math.random() * 370;
+          overlap = false;
+          for (let existingTower of gameState.towers) {
+            const existingLeft = parseInt(existingTower.style.left);
+            const existingTop = parseInt(existingTower.style.top);
+            const distance = Math.hypot(newTowerLeft - existingLeft, newTowerTop - existingTop);
+            if (distance < 40) { // Assuming tower size is 30px, we add a 10px buffer
+              overlap = true;
+              break;
+            }
+          }
+          attempts++;
+        } while (overlap && attempts < maxAttempts);
+        if (attempts >= maxAttempts) {
+          alert("Unable to place tower. The board might be too crowded.");
+          return;
+        }
+        const tower = document.createElement('div');
+        tower.className = 'tower';
+        tower.style.left = newTowerLeft + 'px';
+        tower.style.top = newTowerTop + 'px';
+        tower.style.width = '30px';
+        tower.style.height = '30px';
+        tower.style.fontSize = '12px';
+        const randomTowerType = GG_ALL_GAME_CONFIG.towerTypes[Math.floor(Math.random() * GG_ALL_GAME_CONFIG.towerTypes.length)];
+        tower.textContent = randomTowerType;
+        tower.dataset.level = 1;
+        tower.dataset.type = randomTowerType;
+        document.getElementById('game-board').appendChild(tower);
+        gameState.towers.push(tower);
+        gameState.score -= gameState.currentTowerCost;
+        gameState.currentTowerCost *= GG_ALL_GAME_CONFIG.towerCostMultiplier;
+        updateStats();
+        tower.addEventListener('click', shootBullet);
+      } else {
+        alert("Not enough score to place a tower! You need " + gameState.currentTowerCost + " score.");
+      }
+    }
+
+    function upgradeTower() {
+      if (gameState.score >= GG_ALL_GAME_CONFIG.upgradeCost && gameState.towers.length > 0) {
+        document.querySelectorAll('button')[1].textContent = `Upgrade Tower (Cost: ${GG_ALL_GAME_CONFIG.upgradeCost})`;
+        const tower = gameState.towers[Math.floor(Math.random() * gameState.towers.length)];
+        const currentLevel = parseInt(tower.dataset.level);
+        tower.dataset.level = currentLevel + 1;
+        tower.textContent = tower.dataset.type + currentLevel;
+        tower.style.width = (30 + currentLevel * 5) + 'px';
+        tower.style.height = (30 + currentLevel * 5) + 'px';
+        tower.style.fontSize = (12 + currentLevel * 2) + 'px';
+        gameState.score -= GG_ALL_GAME_CONFIG.upgradeCost;
+        updateStats();
+      }
+    }
+
+    function spawnEnemy() {
+      const enemy = document.createElement('div');
+      enemy.className = 'enemy';
+      enemy.style.left = '0px';
+      enemy.style.top = Math.random() * 380 + 'px';
+      const timeSinceStart = Date.now() - gameState.gameStartTime;
+      const isBlueEnemy = timeSinceStart > GG_ALL_GAME_CONFIG.blueEnemySpawnDelay && Math.random() < 0.3;
+      const isRedEnemy = timeSinceStart > GG_ALL_GAME_CONFIG.redEnemySpawnDelay && Math.random() < 0.2;
+      const isSpawnerEnemy = timeSinceStart > GG_ALL_GAME_CONFIG.spawnerEnemySpawnDelay && Math.random() < 0.1;
+      if (isSpawnerEnemy) {
+        enemy.classList.add('spawner');
+        enemy.dataset.health = GG_ALL_GAME_CONFIG.spawnerEnemyHealth * (1 + (gameState.wave - 1) * GG_ALL_GAME_CONFIG.waveDifficultyIncrease);
+        enemy.dataset.speed = GG_ALL_GAME_CONFIG.spawnerEnemySpeed;
+        enemy.dataset.lastSpawnTime = Date.now();
+      } else if (isRedEnemy) {
+        enemy.classList.add('red');
+        enemy.dataset.health = GG_ALL_GAME_CONFIG.redEnemyHealth * (1 + (gameState.wave - 1) * GG_ALL_GAME_CONFIG.waveDifficultyIncrease);
+        enemy.dataset.speed = GG_ALL_GAME_CONFIG.redEnemySpeed;
+      } else if (isBlueEnemy) {
+        enemy.style.backgroundColor = '#0000ff';
+        enemy.dataset.health = GG_ALL_GAME_CONFIG.blueEnemyHealth * (1 + (gameState.wave - 1) * GG_ALL_GAME_CONFIG.waveDifficultyIncrease);
+        enemy.dataset.speed = GG_ALL_GAME_CONFIG.blueEnemySpeed;
+      } else {
+        enemy.dataset.health = GG_ALL_GAME_CONFIG.enemyHealth * (1 + (gameState.wave - 1) * GG_ALL_GAME_CONFIG.waveDifficultyIncrease);
+        enemy.dataset.speed = GG_ALL_GAME_CONFIG.enemySpeed;
+      }
+      document.getElementById('game-board').appendChild(enemy);
+      gameState.enemies.push(enemy);
+    }
+
+    function spawnPurpleEnemy(spawner) {
+      const enemy = document.createElement('div');
+      enemy.className = 'enemy spawned';
+      enemy.style.left = spawner.style.left;
+      enemy.style.top = spawner.style.top;
+      enemy.dataset.health = GG_ALL_GAME_CONFIG.spawnedEnemyHealth * (1 + (gameState.wave - 1) * GG_ALL_GAME_CONFIG.waveDifficultyIncrease);
+      enemy.dataset.speed = GG_ALL_GAME_CONFIG.spawnedEnemySpeed;
+      document.getElementById('game-board').appendChild(enemy);
+      gameState.enemies.push(enemy);
+    }
+
+    function moveEnemies() {
+      gameState.enemies.forEach((enemy, index) => {
+        const currentLeft = parseFloat(enemy.style.left);
+        if (currentLeft > 600) {
+          enemy.remove();
+          gameState.enemies.splice(index, 1);
+          gameState.lives--;
+          updateStats();
+          if (gameState.lives <= 0) {
+            alert('Game Over! Your score: ' + gameState.score);
+            location.reload();
+          }
+        } else {
+          const enemySpeed = parseFloat(enemy.dataset.speed);
+          enemy.style.left = (currentLeft + enemySpeed) + 'px';
+          if (enemy.classList.contains('spawner')) {
+            const currentTime = Date.now();
+            const lastSpawnTime = parseInt(enemy.dataset.lastSpawnTime);
+            if (currentTime - lastSpawnTime >= GG_ALL_GAME_CONFIG.spawnerEnemySpawnRate) {
+              spawnPurpleEnemy(enemy);
+              enemy.dataset.lastSpawnTime = currentTime;
+            }
+          }
+        }
+      });
+    }
+
+    function towerAttack() {
+      gameState.towers.forEach(tower => {
+        const towerRect = tower.getBoundingClientRect();
+        const towerLevel = parseInt(tower.dataset.level);
+        const towerType = tower.dataset.type;
+        if (towerType === '🤖' || towerType === '☄️') {
+          const currentTime = Date.now();
+          const lastShootTime = parseInt(tower.dataset.lastShootTime) || 0;
+          let cooldown;
+          if (towerType === '🤖') {
+            cooldown = GG_ALL_GAME_CONFIG.autoTowerCooldown - ((towerLevel - 1) * GG_ALL_GAME_CONFIG.autoTowerUpgradeReduction);
+          } else if (towerType === '☄️') {
+            cooldown = GG_ALL_GAME_CONFIG.meteorTowerCooldown;
+          }
+          if (currentTime - lastShootTime >= cooldown) {
+            const closestEnemy = findClosestEnemy(tower);
+            if (closestEnemy) {
+              shootBullet({
+                target: tower
+              });
+              tower.dataset.lastShootTime = currentTime;
+            }
+          }
+        }
+      });
+    }
+
+    function updateStats() {
+      document.getElementById('wave').textContent = gameState.wave;
+      document.getElementById('score').textContent = gameState.score;
+      document.getElementById('lives').textContent = gameState.lives;
+      document.querySelector('button').textContent = `Add Random Tower (Cost: ${gameState.currentTowerCost})`;
+      document.querySelectorAll('button')[1].textContent = `Upgrade Tower (Cost: ${GG_ALL_GAME_CONFIG.upgradeCost})`;
+    }
+
+    function shootBullet(event) {
+      const tower = event.target;
+      const closestEnemy = findClosestEnemy(tower);
+      if (closestEnemy) {
+        const towerType = tower.dataset.type;
+        const bulletEffect = GG_ALL_GAME_CONFIG.bulletEffects[towerType];
+        const bulletSpeed = towerType === '🏹' ? GG_ALL_GAME_CONFIG.bulletSpeed * GG_ALL_GAME_CONFIG.fastBulletSpeedMultiplier : GG_ALL_GAME_CONFIG.bulletSpeed;
+        if (towerType === '👹') {
+          // Shotgun effect: create multiple bullets
+          const spreadAngle = Math.PI / 6; // 30 degrees spread
+          for (let i = -2; i <= 2; i++) {
+            const bullet = createBullet(tower, closestEnemy, bulletEffect, bulletSpeed);
+            const angle = Math.atan2(
+              closestEnemy.offsetTop - tower.offsetTop,
+              closestEnemy.offsetLeft - tower.offsetLeft
+            ) + (i * spreadAngle / 2);
+            bullet.dataset.dx = Math.cos(angle) * bulletSpeed;
+            bullet.dataset.dy = Math.sin(angle) * bulletSpeed;
+            gameState.bullets.push(bullet);
+          }
+        } else {
+          const bullet = createBullet(tower, closestEnemy, bulletEffect, bulletSpeed);
+          gameState.bullets.push(bullet);
+        }
+      }
+    }
+
+    function createBullet(tower, enemy, bulletEffect, bulletSpeed) {
+      const bullet = document.createElement('div');
+      bullet.className = 'bullet';
+      bullet.style.left = tower.style.left;
+      bullet.style.top = tower.style.top;
+      bullet.style.backgroundColor = bulletEffect.color;
+      bullet.dataset.effect = bulletEffect.effect;
+      if (tower.dataset.type === '☄️') {
+        bullet.dataset.damage = GG_ALL_GAME_CONFIG.towerDamage * GG_ALL_GAME_CONFIG.meteorTowerDamage * parseInt(tower.dataset.level);
+        bullet.style.width = bullet.style.height = GG_ALL_GAME_CONFIG.bigBulletSize * 2 + 'px';
+      } else {
+        bullet.dataset.damage = GG_ALL_GAME_CONFIG.towerDamage * parseInt(tower.dataset.level);
+        if (tower.dataset.type === '🗿') {
+          bullet.style.width = bullet.style.height = GG_ALL_GAME_CONFIG.bigBulletSize + 'px';
+        }
+      }
+      document.getElementById('game-board').appendChild(bullet);
+      // Predict enemy's future position
+      const enemySpeed = parseFloat(enemy.dataset.speed) || GG_ALL_GAME_CONFIG.enemySpeed;
+      const timeToReach = Math.hypot(
+        enemy.offsetLeft - tower.offsetLeft,
+        enemy.offsetTop - tower.offsetTop
+      ) / bulletSpeed;
+      const predictedEnemyLeft = enemy.offsetLeft + enemySpeed * timeToReach;
+      const predictedEnemyTop = enemy.offsetTop;
+      const angle = Math.atan2(
+        predictedEnemyTop - tower.offsetTop,
+        predictedEnemyLeft - tower.offsetLeft
+      );
+      bullet.dataset.dx = Math.cos(angle) * bulletSpeed;
+      bullet.dataset.dy = Math.sin(angle) * bulletSpeed;
+      return bullet;
+    }
+
+    function findClosestEnemy(tower) {
+      let closestEnemy = null;
+      let closestDistance = Infinity;
+      gameState.enemies.forEach(enemy => {
+        const distance = Math.hypot(
+          enemy.offsetLeft - tower.offsetLeft,
+          enemy.offsetTop - tower.offsetTop
+        );
+        // Consider enemy speed and direction in distance calculation
+        const enemySpeed = parseFloat(enemy.dataset.speed) || GG_ALL_GAME_CONFIG.enemySpeed;
+        const adjustedDistance = distance - enemySpeed * (distance / GG_ALL_GAME_CONFIG.bulletSpeed);
+        if (adjustedDistance < closestDistance) {
+          closestDistance = adjustedDistance;
+          closestEnemy = enemy;
+        }
+      });
+      return closestEnemy;
+    }
+
+    function moveBullets() {
+      gameState.bullets.forEach((bullet, index) => {
+        const currentLeft = parseFloat(bullet.style.left);
+        const currentTop = parseFloat(bullet.style.top);
+        const dx = parseFloat(bullet.dataset.dx);
+        const dy = parseFloat(bullet.dataset.dy);
+        bullet.style.left = (currentLeft + dx) + 'px';
+        bullet.style.top = (currentTop + dy) + 'px';
+        // Check for collision with enemies
+        gameState.enemies.forEach((enemy, enemyIndex) => {
+          if (isCollision(bullet, enemy)) {
+            const bulletEffect = bullet.dataset.effect;
+            applyBulletEffect(enemy, bulletEffect);
+            const bulletDamage = parseFloat(bullet.dataset.damage);
+            const enemyHealth = parseFloat(enemy.dataset.health) - bulletDamage;
+            if (enemyHealth <= 0) {
+              enemy.remove();
+              gameState.enemies.splice(enemyIndex, 1);
+              gameState.score += GG_ALL_GAME_CONFIG.enemyReward;
+              updateStats();
+            } else {
+              enemy.dataset.health = enemyHealth;
+            }
+            if (bulletEffect !== 'piercing') {
+              bullet.remove();
+              gameState.bullets.splice(index, 1);
+            }
+          }
+        });
+        // Remove bullets that are out of bounds
+        if (
+          currentLeft < 0 ||
+          currentLeft > 600 ||
+          currentTop < 0 ||
+          currentTop > 400
+        ) {
+          bullet.remove();
+          gameState.bullets.splice(index, 1);
+        }
+      });
+    }
+
+    function applyBulletEffect(enemy, effect) {
+      switch (effect) {
+        case 'normal':
+          // Normal damage, no special effect
+          break;
+        case 'fast':
+          // Fast bullets, no special effect
+          break;
+        case 'burn':
+          if (!enemy.dataset.burning) {
+            enemy.dataset.burning = 'true';
+            enemy.style.backgroundColor = '#ff6600';
+            const burnInterval = setInterval(() => {
+              const health = parseFloat(enemy.dataset.health);
+              enemy.dataset.health = health - 0.5;
+              if (health <= 0 || !document.body.contains(enemy)) {
+                clearInterval(burnInterval);
+              }
+            }, 1000);
+          }
+          break;
+        case 'freeze':
+          if (!enemy.dataset.frozen) {
+            enemy.dataset.frozen = 'true';
+            enemy.style.backgroundColor = '#00ffff';
+            const originalSpeed = parseFloat(enemy.dataset.speed) || GG_ALL_GAME_CONFIG.enemySpeed;
+            enemy.dataset.speed = originalSpeed * 0.5;
+            setTimeout(() => {
+              if (document.body.contains(enemy)) {
+                enemy.dataset.frozen = 'false';
+                enemy.style.backgroundColor = '#533483';
+                enemy.dataset.speed = originalSpeed;
+              }
+            }, 3000);
+          }
+          break;
+        case 'big':
+          // Big bullets deal double damage
+          enemy.dataset.health = parseFloat(enemy.dataset.health) - GG_ALL_GAME_CONFIG.towerDamage;
+          break;
+        case 'reverse':
+          if (!enemy.dataset.reversed) {
+            enemy.dataset.reversed = 'true';
+            enemy.dataset.originalSpeed = enemy.dataset.speed;
+            enemy.dataset.speed = -parseFloat(enemy.dataset.speed);
+            setTimeout(() => {
+              if (document.body.contains(enemy)) {
+                enemy.dataset.reversed = 'false';
+                enemy.dataset.speed = enemy.dataset.originalSpeed;
+              }
+            }, 1000);
+          }
+          break;
+        case 'shotgun':
+          // Shotgun effect is handled in bullet creation, no special effect needed here
+          break;
+        case 'meteor':
+          // Meteor effect deals massive damage, no additional effect needed
+          break;
+      }
+    }
+
+    function isCollision(bullet, enemy) {
+      const bulletRect = bullet.getBoundingClientRect();
+      const enemyRect = enemy.getBoundingClientRect();
+      return !(
+        bulletRect.right < enemyRect.left ||
+        bulletRect.left > enemyRect.right ||
+        bulletRect.bottom < enemyRect.top ||
+        bulletRect.top > enemyRect.bottom
+      );
+    }
+
+    function gameLoop() {
+      moveEnemies();
+      towerAttack();
+      moveBullets();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function startWave() {
+      const spawnInterval = setInterval(() => {
+        spawnEnemy();
+        if (gameState.enemies.length >= gameState.wave * 5) {
+          clearInterval(spawnInterval);
+          gameState.wave++;
+          GG_ALL_GAME_CONFIG.enemySpeed += 0.1;
+          GG_ALL_GAME_CONFIG.blueEnemySpeed += 0.2;
+          updateStats();
+          setTimeout(startWave, 5000);
+        }
+      }, GG_ALL_GAME_CONFIG.enemySpawnRate);
+    }
+    gameState.gameStartTime = Date.now();
+    gameLoop();
+    startWave();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,77 @@
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 50px;
+        }
+
+        #header {
+            margin: 0 auto;
+            padding: 2em;
+            width: auto 800px;
+            background: #333;
+            text-align: center;
+            border-radius: 10px;
+            position: relative;
+            top: 10px;
+        }
+
+        @property --angles {
+            syntax: '<angle>';
+            inherits: false;
+            initial-value: 0deg;
+        }
+
+        #header::after, #header::before {
+            content: '';
+            position: absolute;
+            height: 100%;
+            width: 100% ;
+            background-image: conic-gradient(from var(--angles), #00bbff, #ff8400, #d9ff00, #00bbff);
+            top: 50%;
+            left: 50%;
+            translate: -50% -50%;
+            z-index: -1;
+            padding: 3px;
+            border-radius: 10px;
+            animation: 3s spin linear infinite;
+        }
+        #header::before {
+            filter: blur(10px);
+            opacity: 0.9;
+        }
+
+        @keyframes spin {
+            from {
+                --angles: 0deg;
+            }
+            to {
+                --angles: 360deg;
+            }
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 3px;
+            padding: 15px;
+        }
+
+        #box {
+            margin-top: 20px;
+            background-color: black;
+            border-radius: 5px;
+            height: 135px;
+            width: 245px;
+            background-size: cover;
+            border: rgb(255, 255, 255) 5px solid;
+        }

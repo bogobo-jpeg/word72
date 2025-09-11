@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>macrwave</title>
+  <style>
+    #flash-game {
+      border: 0px solid #fff;
+    }
+  </style>
+</head>
+<body style="background-color: darkgray;">
+  <h1>RIGHT CLICK FRAME TO GO FULL SCREEN!!!</h1>
+  <div id="flash-game"></div>
+
+  <!-- Load Ruffle script -->
+  <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+  <script>
+    // Create Ruffle player
+    const ruffle = window.RufflePlayer.newest();
+    const player = ruffle.createPlayer();
+
+    // Append to container
+    const container = document.getElementById("flash-game");
+    container.appendChild(player);
+
+    // Load SWF file
+    player.load("Microwave.swf");
+  </script>
+      <!-- Google tag (gtag.js) -->
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-HRQHXSV78G"></script>
+      <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+  
+          gtag('config', 'G-HRQHXSV78G');
+  </script>
+</body>
+</html>

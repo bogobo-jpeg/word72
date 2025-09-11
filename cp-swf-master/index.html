@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <title>Club Penguin Archive</title>
+    <script src="main.js"></script>
+    <script src="ports.js"></script>
+    <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+    <script async defer data-website-id="7d735b74-bd1d-4b20-ae98-f05b3bc9a109" data-domains="cpswf.barichello.me" src="https://log.aa.art.br/script.js"></script>
+    <link rel="stylesheet" href="main.css">
+</head>
+
+<body>
+    <div id="elm"></div>
+    <script>
+        var elm = Elm.Main.init({
+            node: document.getElementById("elm"),
+            flags: false, // debug mode
+        })
+
+        startPorts(elm)
+
+        // All this code below was written to support this project on Chrome-based browsers
+        // Updating the src attribute is enough on Firefox/Opera/etc to change the SWF but
+        // because of a 'wontfix' bug on Chrome you have to remove and readd the element for it to update
+        // https://bugs.chromium.org/p/chromium/issues/detail?id=69648
+
+        function mutationCallback() {
+            const swfContent = document.getElementById("swf-content")
+            const embed = document.querySelector("#swf-content embed")
+            const clone = embed.cloneNode()
+            swfContent.removeChild(embed)
+            swfContent.appendChild(clone)
+            observeMutation(mutationCallback)
+        }
+
+        function observeMutation(callback) {
+            const mut = new MutationObserver(callback)
+            mut.observe(document.getElementById("swf"), { attributes: true, childList: true, subtree: true })
+        }
+
+        observeMutation(mutationCallback)
+    </script>
+</body>
+
+</html>

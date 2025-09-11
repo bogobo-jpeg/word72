@@ -1,0 +1,20 @@
+{
+  "database": {
+    "schema": {
+      "custom_towers_v2": {
+        "tower_data": {
+          "type": "jsonb",
+          "description": "The full JSON object of the custom tower data, including base stats, upgrade paths, and visuals."
+        }
+      },
+      "broadcasts_v1": {
+        "text": {
+          "type": "text",
+          "description": "The content of the broadcast message."
+        }
+      }
+    },
+    "instructions": "This database stores user-created custom towers for the Tower Defense game. Each record in 'custom_towers_v2' contains the full configuration for a tower. The `broadcasts_v1` table is for admin messages sent to all players."
+  }
+}
+

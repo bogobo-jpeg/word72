@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower Defense</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+    {
+      "imports": {
+        "@websim/websim-socket": "https://esm.websim.com/@websim/websim-socket"
+      }
+    }
+    </script>
+</head>
+<body>
+    <div id="main-menu">
+        <div id="admin-panel-container" style="position: fixed; top: 10px; right: 10px; z-index: 100;"></div>
+        <div class="menu-content">
+            <h1 class="game-title">Tower Defense</h1>
+            <div class="menu-options">
+                <div class="game-setup-panel">
+                    <h3>New Game</h3>
+                    <div class="option-group">
+                        <label for="map-select">Map</label>
+                        <select id="map-select">
+                            <option value="straight">Straight Path</option>
+                            <option value="zigzag">Zigzag</option>
+                            <option value="loop">The Loop</option>
+                        </select>
+                    </div>
+                    <div class="option-group">
+                        <label>Difficulty</label>
+                        <div id="difficulty-selection" class="button-group">
+                            <button class="difficulty-btn" data-difficulty="easy">Easy</button>
+                            <button class="difficulty-btn active" data-difficulty="normal">Normal</button>
+                            <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+                            <button class="difficulty-btn" data-difficulty="nightmare">Nightmare</button>
+                        </div>
+                    </div>
+                    <button id="start-game-btn">Launch Defense</button>
+                    <div id="loading-status">Loading custom towers...</div>
+                </div>
+                <div id="custom-tower-list-container" style="display: none;">
+                    <h3>My Saved Towers</h3>
+                    <div id="custom-tower-list"></div>
+                </div>
+            </div>
+            <div class="menu-footer">
+                <button id="how-to-play-btn">How to Play</button>
+                <div class="footer-promo">Like the game for more updates! ❤️</div>
+                <button id="credits-btn">Credits</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-ui-container" style="display: none;">
+        <div class="game-info">
+            <div class="resources">
+                <div class="money">Money: <span id="money">300</span></div>
+                <div class="lives">Lives: <span id="lives">15</span></div>
+                <div class="wave">Wave: <span id="wave">0</span></div>
+            </div>
+            <div class="tower-selection">
+                <button class="tower-btn" data-type="basic" data-cost="150" data-basecost="150">
+                    Basic ($<span class="tower-cost">150</span>)
+                </button>
+                <button class="tower-btn" data-type="sniper" data-cost="300" data-basecost="300">
+                    Sniper ($<span class="tower-cost">300</span>)
+                </button>
+                <button class="tower-btn" data-type="splash" data-cost="450" data-basecost="450">
+                    Splash ($<span class="tower-cost">450</span>)
+                </button>
+                <button class="tower-btn" data-type="frost" data-cost="350" data-basecost="350">
+                    Frost ($<span class="tower-cost">350</span>)
+                </button>
+                <button class="tower-btn" data-type="poison" data-cost="400" data-basecost="400">
+                    Poison ($<span class="tower-cost">400</span>)
+                </button>
+                <button class="tower-btn" data-type="lightning" data-cost="500" data-basecost="500">
+                    Lightning ($<span class="tower-cost">500</span>)
+                </button>
+                <button class="tower-btn" data-type="bomb" data-cost="600" data-basecost="600">
+                    Bomb ($<span class="tower-cost">600</span>)
+                </button>
+                <button class="tower-btn" data-type="laser" data-cost="700" data-basecost="700">
+                    Laser ($<span class="tower-cost">700</span>)
+                </button>
+            </div>
+            <div class="game-controls">
+                <button id="start-wave">Start Wave</button>
+                <button id="auto-start" class="toggle-btn">Auto Start: Off</button>
+                <button id="speed-toggle" class="toggle-btn">Speed: 1x</button>
+                <button id="reset-game">Reset Game</button>
+                <button id="back-to-menu">Back to Menu</button>
+                <button id="create-tower-btn">Create with AI</button>
+                <button id="create-enemy-btn">Create Enemy</button>
+            </div>
+        </div>
+        <div class="game-area-container">
+            <div id="game-board"></div>
+            <div id="chat-container">
+                <div id="chat-messages">
+                    <!-- Chat messages will be appended here by game.js -->
+                </div>
+                <div id="chat-input-container">
+                    <input type="text" id="chat-input" placeholder="Type a message...">
+                    <button id="send-chat-btn">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="promo-popup" style="display: none;">
+        <div id="promo-content">
+            <p>Click to find more of my projects!</p>
+            <a href="https://websim.com/@Electr1cBacon/Profile" target="_blank" id="promo-link-btn">Visit Profile</a>
+        </div>
+        <button id="close-promo-popup">×</button>
+    </div>
+
+    <div id="upgrade-menu" class="upgrade-menu">
+        <div class="upgrade-header">
+            <h3 id="upgrade-title">Tower Upgrades</h3>
+            <button id="close-upgrade">×</button>
+        </div>
+        <div class="upgrade-paths">
+            <div class="upgrade-path">
+                <div class="path-name" id="path1-name">Path 1</div>
+                <div class="upgrade-levels" id="path1-levels"></div>
+                <div class="upgrade-description" id="path1-description">Select a tower to see upgrades</div>
+                <button class="upgrade-btn" id="upgrade-path1">Upgrade ($<span id="path1-cost">0</span>)</button>
+            </div>
+            <div class="upgrade-path">
+                <div class="path-name" id="path2-name">Path 2</div>
+                <div class="upgrade-levels" id="path2-levels"></div>
+                <div class="upgrade-description" id="path2-description">Select a tower to see upgrades</div>
+                <button class="upgrade-btn" id="upgrade-path2">Upgrade ($<span id="path2-cost">0</span>)</button>
+            </div>
+            <div class="upgrade-path">
+                <div class="path-name" id="path3-name">Path 3</div>
+                <div class="upgrade-levels" id="path3-levels"></div>
+                <div class="upgrade-description" id="path3-description">Select a tower to see upgrades</div>
+                <button class="upgrade-btn" id="upgrade-path3">Upgrade ($<span id="path3-cost">0</span>)</button>
+            </div>
+        </div>
+        <div class="tower-stats" id="tower-stats">
+            <!-- Tower stats will be displayed here -->
+        </div>
+        <div class="sell-container">
+            <button id="sell-tower" class="sell-btn">Sell Tower (<span id="sell-value">0</span>)</button>
+        </div>
+    </div>
+    
+    <div id="tutorial" class="tutorial" style="display: none;">
+        <div class="tutorial-content">
+            <h2>How to Play</h2>
+            <p>1. Select a tower from the menu</p>
+            <p>2. Tap on a valid grid cell to place the tower</p>
+            <p>3. Start the wave and defend your path!</p>
+            <p>4. Earn money by defeating enemies</p>
+            <p>5. Click on a tower to upgrade it</p>
+            <h3>Tower Types:</h3>
+            <p>- Basic: Well-balanced tower</p>
+            <p>- Sniper: High damage, long range, slow fire rate</p>
+            <p>- Splash: Area damage to multiple enemies</p>
+            <p>- Frost: Slows enemies down temporarily</p>
+            <p>- Poison: Applies damage over time</p>
+            <p>- Lightning: Chains damage to nearby enemies</p>
+            <p>- Bomb: High area damage with slow fire rate</p>
+            <p>- Laser: Continuous beam damage</p>
+            <h3>Enemy Types:</h3>
+            <p>- Basic: Standard enemy with balanced stats</p>
+            <p>- Fast: Moves quickly but has less health</p>
+            <p>- Tank: Slower but has high health</p>
+            <p>- Swift: Extremely fast with very low health</p>
+            <p>- Armored: Very high health and resistance</p>
+            <p>- Phantom: Fast and difficult to hit</p>
+            <h3>Special Effects:</h3>
+            <p>- Slow: Reduces enemy movement speed.</p>
+            <p>- Poison: Deals damage over time to enemies.</p>
+            <p>- Stun: Temporarily stops enemies from moving.</p>
+            <button id="close-tutorial">Got it!</button>
+        </div>
+    </div>
+    <div id="code-copy" class="code-copy" style="display: none;">
+        <div class="code-copy-header">
+            <h3>Created by Electr1cBacon</h3>
+            <button id="close-code-copy">×</button>
+        </div>
+        <div class="code-copy-buttons">
+            <button id="copy-html">Copy HTML</button>
+            <button id="copy-css">Copy CSS</button>
+            <button id="copy-js">Copy JavaScript</button>
+        </div>
+        <div id="copy-status" class="copy-status"></div>
+    </div>
+
+    <div id="ai-creator-menu" class="ai-menu" style="display: none;">
+        <div class="ai-menu-content">
+            <div class="ai-menu-header">
+                <h3>Create a Custom Tower</h3>
+                <button id="close-ai-creator">×</button>
+            </div>
+            <p>Describe your tower idea, and our AI will bring it to life!</p>
+            <input type="text" id="ai-tower-name" placeholder="Tower Name (e.g., Sunstone Obelisk)">
+            <textarea id="ai-tower-description" placeholder="Describe your tower... (e.g., 'A slow but powerful tower that shoots beams of light which burn enemies over time and can occasionally stun them.')"></textarea>
+            <button id="generate-ai-tower">Generate Tower</button>
+            <div id="ai-status"></div>
+        </div>
+    </div>
+
+    <div id="ai-enemy-creator-menu" class="ai-menu" style="display: none;">
+        <div class="ai-menu-content">
+            <div class="ai-menu-header">
+                <h3>Create a Custom Enemy</h3>
+                <button id="close-ai-enemy-creator">×</button>
+            </div>
+            <p>Describe your enemy idea, and our AI will bring it to life!</p>
+            <input type="text" id="ai-enemy-name" placeholder="Enemy Name (e.g., Crystal Golem)">
+            <textarea id="ai-enemy-description" placeholder="Describe your enemy... (e.g., 'A slow, tough enemy made of crystal. It's resistant to normal attacks but weak to splash damage. It shatters when defeated, releasing smaller shards.')"></textarea>
+            <button id="generate-ai-enemy">Generate Enemy</button>
+            <div id="ai-enemy-status"></div>
+        </div>
+    </div>
+
+    <div id="game-over-screen" style="display: none;">
+        <div id="game-over-content">
+            <h1>Game Over</h1>
+            <p>You survived <span id="final-wave" class="stat-value">0</span> waves.</p>
+            <p>Enemies defeated: <span id="final-enemies" class="stat-value">0</span></p>
+            <p class="final-message">Your defenses have been overwhelmed...</p>
+            <button id="restart-game-btn">Try Again</button>
+            <button id="game-over-to-menu-btn">Return to Menu</button>
+        </div>
+    </div>
+
+    <div id="broadcast-container"></div>
+
+    <script>
+        (function() {
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Backquote') {
+                    window.postMessage('backquote_pressed', '*');
+                }
+                if (e.code === 'Backslash') {
+                    window.postMessage('backslash_pressed', '*');
+                }
+                if (e.code === 'Equal') {
+                    window.postMessage('equal_pressed', '*');
+                }
+            });
+        })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.19.1/dist/lil-gui.umd.min.js"></script>
+    <script type="module" src="game.js"></script>
+</body>
+</html>

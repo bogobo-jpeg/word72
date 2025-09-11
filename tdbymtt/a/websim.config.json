@@ -1,0 +1,16 @@
++++ b/websim.config.json
+@@ -12,6 +12,12 @@
+           "type": "text",
+           "description": "The content of the broadcast message."
+         }
++      },
++      "chat_messages_v1": {
++        "message": {
++          "type": "text",
++          "description": "The content of the chat message."
++        }
+       }
+     },
+     "instructions": "This database stores user-created custom towers for the Tower Defense game. Each record in 'custom_towers_v2' contains the full configuration for a tower. The `broadcasts_v1` table is for admin messages sent to all players."
+
+

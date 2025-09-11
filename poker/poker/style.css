@@ -1,0 +1,40 @@
+body {
+  font-family: sans-serif;
+  background: #1a1a1a;
+  color: white;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+.game-container {
+  max-width: 800px;
+  margin: auto;
+  padding: 20px;
+}
+.hand {
+  margin: 20px 0;
+}
+.card {
+  display: inline-block;
+  width: 60px;
+  height: 90px;
+  background: white;
+  color: black;
+  border-radius: 5px;
+  margin: 5px;
+  font-size: 1.2rem;
+  line-height: 90px;
+}
+.buttons button {
+  margin: 5px;
+  padding: 10px 20px;
+  font-size: 1rem;
+}
+.log {
+  margin-top: 20px;
+  min-height: 50px;
+}
+.community-card {
+  border: 2px solid gold;
+}
+

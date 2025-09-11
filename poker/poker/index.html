@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Texas Hold'em</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="game-container">
+    <h1>Texas Hold'em Poker</h1>
+    <div class="currency">💰 Chips: <span id="chips">0</span></div>
+    
+    <h3>Your Hand</h3>
+    <div id="player-hand" class="hand"></div>
+    
+    <h3>Community Cards</h3>
+    <div id="community-cards" class="hand"></div>
+    
+    <h3>Bot Hand (Hidden)</h3>
+    <div id="bot-hand" class="hand">
+      <div class="card">🂠</div>
+      <div class="card">🂠</div>
+    </div>
+
+    <div class="buttons">
+      <button onclick="startGame()">Start Game</button>
+      <button onclick="nextStage()">Next Stage</button>
+      <button onclick="check()">Check</button>
+      <button onclick="call()">Call</button>
+      <button onclick="bet(10)">Bet 10</button>
+      <button onclick="fold()">Fold</button>
+      <button onclick="resetCurrency()">Reset</button>
+    </div>
+
+    <div id="log" class="log"></div>
+  </div>
+
+  <script src="storage.js"></script>
+  <script src="bots.js"></script>
+  <script>
+    const suits = ['♠', '♥', '♦', '♣'];
+const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+let deck = [];
+let playerHand = [];
+let botHand = [];
+let communityCards = [];
+let stage = 0; // 0: not started, 1: flop, 2: turn, 3: river
+
+function shuffleDeck() {
+  deck = [];
+  for (let s of suits) {
+    for (let v of values) {
+      deck.push(v + s);
+    }
+  }
+  deck.sort(() => Math.random() - 0.5);
+}
+
+function drawCard() {
+  return deck.pop();
+}
+
+function startGame() {
+  shuffleDeck();
+  playerHand = [drawCard(), drawCard()];
+  botHand = [drawCard(), drawCard()];
+  communityCards = [];
+  stage = 0;
+
+  displayHand('player-hand', playerHand);
+  displayHand('community-cards', []);
+  logMessage("New game started. Your move.");
+}
+
+function nextStage() {
+  if (stage === 0) {
+    communityCards = [drawCard(), drawCard(), drawCard()];
+    logMessage("Flop dealt.");
+  } else if (stage === 1) {
+    communityCards.push(drawCard());
+    logMessage("Turn dealt.");
+  } else if (stage === 2) {
+    communityCards.push(drawCard());
+    logMessage("River dealt.");
+  } else {
+    logMessage("All cards already dealt.");
+    return;
+  }
+  displayHand('community-cards', communityCards);
+  stage++;
+}
+
+function displayHand(containerId, cards) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  cards.forEach(card => {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.textContent = card;
+    container.appendChild(div);
+  });
+}
+
+function check() {
+  logMessage("You checked.");
+  playBot();
+}
+
+function call() {
+  if (chips >= 10) {
+    chips -= 10;
+    saveCurrency();
+    updateCurrency();
+    logMessage("You called with 10 chips.");
+    playBot();
+  } else {
+    logMessage("Not enough chips.");
+  }
+}
+
+function bet(amount) {
+  if (chips >= amount) {
+    chips -= amount;
+    saveCurrency();
+    updateCurrency();
+    logMessage(`You bet ${amount} chips.`);
+    playBot();
+  } else {
+    logMessage("Not enough chips to bet.");
+  }
+}
+
+function fold() {
+  logMessage("You folded. Bot wins.");
+}
+
+function logMessage(msg) {
+  const log = document.getElementById('log');
+  log.textContent = msg;
+}
+
+window.onload = () => {
+  loadCurrency();
+  startGame();
+};
+
+  </script>
+</body>
+</html>
