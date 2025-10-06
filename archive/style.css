@@ -1,0 +1,27 @@
+        /* Add some basic styling to the table */
+        table {
+            width: 50%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 18px;
+            text-align: left;
+        }
+        th, td {
+            border: 1px solid #665fb4;
+            padding: 8px;
+        }
+        th {
+            background-color: #474281;
+        }
+        tr:nth-child(even) {
+            background-color: #837ae4;
+        }
+        tr:nth-child(odd) {
+            background-color: #6c62db;
+        }
+        body {
+            height: 100vh; /* Full viewport height */
+            background: linear-gradient(to bottom, #74a9ff, #000335); /* Gradient from left to right */
+            font-family: Arial, sans-serif;
+            color: white;
+        }
